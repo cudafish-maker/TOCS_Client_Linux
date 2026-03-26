@@ -36,12 +36,17 @@ err()  { echo -e "${RED}[ERR]${NC} $*"; exit 1; }
 info() { echo -e "${CYAN}[--]${NC}  $*"; }
 hdr()  { echo -e "\n${BOLD}=== $* ===${NC}"; }
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" && pwd)"
 RNS_CONFIG_DIR="$HOME/.config/reticulum"
 
 # ─────────────────────────────────────────────────────────────────────────────
 hdr "TOCS Client Setup"
 # ─────────────────────────────────────────────────────────────────────────────
+
+# Sanity check — make sure we're in the right directory
+if [ ! -f "$SCRIPT_DIR/requirements.txt" ]; then
+    err "requirements.txt not found in $SCRIPT_DIR. Make sure you run setup.sh from inside the tocs_client directory."
+fi
 
 # ── Python check ─────────────────────────────────────────────────────────────
 hdr "Checking Python"
