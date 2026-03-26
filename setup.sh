@@ -78,8 +78,8 @@ fi
 
 # ── Python dependencies ───────────────────────────────────────────────────────
 hdr "Installing Python Dependencies"
-"$VENV_DIR/bin/pip" install --upgrade pip -q
-"$VENV_DIR/bin/pip" install -r "$SCRIPT_DIR/requirements.txt"
+"$VENV_DIR/bin/python" -m pip install --upgrade pip -q
+"$VENV_DIR/bin/python" -m pip install -r "$SCRIPT_DIR/requirements.txt"
 ok "Python dependencies installed"
 
 # ─────────────────────────────────────────────────────────────────────────────
