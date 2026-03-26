@@ -56,8 +56,8 @@ bash setup.sh
 
 `setup.sh` will:
 
-1. Check Python 3.10+ and install pip if needed
-2. Install Python dependencies from `requirements.txt`
+1. Check Python 3.10+ and install pip / venv if needed
+2. Create a virtual environment (`venv/`) and install Python dependencies
 3. Download and install **Yggdrasil** (auto-detects amd64 / arm64 / armhf)
 4. Inject public peers into the Yggdrasil config and start the service
 5. Optionally configure **I2P** (if `i2prouter` or `i2pd` is installed)

@@ -61,10 +61,25 @@ if ! command -v pip3 &>/dev/null; then
     sudo apt install -y python3-pip
 fi
 
+if ! python3 -m venv --help &>/dev/null; then
+    info "Installing python3-venv..."
+    sudo apt install -y python3-venv
+fi
+
+# ── Virtual environment ───────────────────────────────────────────────────────
+hdr "Setting Up Virtual Environment"
+VENV_DIR="$SCRIPT_DIR/venv"
+if [ ! -d "$VENV_DIR" ]; then
+    python3 -m venv "$VENV_DIR"
+    ok "Virtual environment created: $VENV_DIR"
+else
+    ok "Virtual environment already exists: $VENV_DIR"
+fi
+
 # ── Python dependencies ───────────────────────────────────────────────────────
 hdr "Installing Python Dependencies"
-pip3 install -r "$SCRIPT_DIR/requirements.txt" --break-system-packages 2>/dev/null \
-    || pip3 install -r "$SCRIPT_DIR/requirements.txt"
+"$VENV_DIR/bin/pip" install --upgrade pip -q
+"$VENV_DIR/bin/pip" install -r "$SCRIPT_DIR/requirements.txt"
 ok "Python dependencies installed"
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -296,7 +311,7 @@ LAUNCHER="$SCRIPT_DIR/tocs_client.sh"
 cat > "$LAUNCHER" << LAUNCHEOF
 #!/bin/bash
 cd "\$(dirname "\$0")"
-python3 main.py --rns-config "$RNS_CONFIG_DIR" "\$@"
+venv/bin/python main.py --rns-config "$RNS_CONFIG_DIR" "\$@"
 LAUNCHEOF
 chmod +x "$LAUNCHER"
 ok "Launcher: $LAUNCHER"
