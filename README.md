@@ -48,9 +48,11 @@ PyQt6-WebEngine >= 6.6.0
 
 ## Installation
 
+Download the latest release tarball from the [Releases](https://github.com/cudafish-maker/TOCS_Client_Linux/releases) page, then:
+
 ```bash
-git clone https://github.com/cudafish-maker/TOCS_Client_Linux.git
-cd TOCS_Client_Linux
+tar -xzf tocs_client_v1.0.0.tar.gz
+cd tocs_client
 bash setup.sh
 ```
 
