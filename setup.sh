@@ -56,15 +56,8 @@ if [ "$PY_MAJOR" -lt 3 ] || { [ "$PY_MAJOR" -eq 3 ] && [ "$PY_MINOR" -lt 10 ]; }
 fi
 ok "Python $PY_VER"
 
-if ! command -v pip3 &>/dev/null; then
-    info "Installing pip3..."
-    sudo apt install -y python3-pip
-fi
-
-if ! python3 -m venv --help &>/dev/null; then
-    info "Installing python3-venv..."
-    sudo apt install -y python3-venv
-fi
+info "Installing python3-pip and python3-venv..."
+sudo apt install -y python3-pip python3-venv
 
 # ── Virtual environment ───────────────────────────────────────────────────────
 hdr "Setting Up Virtual Environment"
@@ -74,6 +67,14 @@ if [ ! -d "$VENV_DIR" ]; then
     ok "Virtual environment created: $VENV_DIR"
 else
     ok "Virtual environment already exists: $VENV_DIR"
+fi
+
+# Bootstrap pip inside the venv in case ensurepip was unavailable
+if ! "$VENV_DIR/bin/python" -m pip --version &>/dev/null; then
+    info "Bootstrapping pip in venv..."
+    sudo apt install -y python3-pip
+    "$VENV_DIR/bin/python" -m ensurepip --upgrade 2>/dev/null \
+        || curl -sS https://bootstrap.pypa.io/get-pip.py | "$VENV_DIR/bin/python"
 fi
 
 # ── Python dependencies ───────────────────────────────────────────────────────
