@@ -36,7 +36,7 @@ err()  { echo -e "${RED}[ERR]${NC} $*"; exit 1; }
 info() { echo -e "${CYAN}[--]${NC}  $*"; }
 hdr()  { echo -e "\n${BOLD}=== $* ===${NC}"; }
 
-SCRIPT_DIR="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RNS_CONFIG_DIR="$HOME/.config/reticulum"
 
 # ─────────────────────────────────────────────────────────────────────────────
