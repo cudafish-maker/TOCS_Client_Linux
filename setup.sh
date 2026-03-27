@@ -33,16 +33,9 @@ err()  { echo -e "${RED}[ERR]${NC} $*" >&2; exit 1; }
 info() { echo -e "${CYAN}[--]${NC}  $*"; }
 hdr()  { echo -e "\n${BOLD}=== $* ===${NC}"; }
 
-# ── Working directory ─────────────────────────────────────────────────────────
-# Always run from the directory containing this script
-cd "$(dirname "$0")"
-SCRIPT_DIR="$(pwd)"
 RNS_CONFIG_DIR="$HOME/.config/reticulum"
 
 hdr "TOCS Client Setup"
-info "Working directory: $SCRIPT_DIR"
-
-[ -f "$SCRIPT_DIR/requirements.txt" ] || err "requirements.txt not found. Run setup.sh from inside the tocs_client directory."
 
 # ── Python ────────────────────────────────────────────────────────────────────
 hdr "Checking Python"
@@ -64,7 +57,7 @@ ok "System packages ready"
 
 # ── Virtual environment ───────────────────────────────────────────────────────
 hdr "Setting Up Virtual Environment"
-VENV="$SCRIPT_DIR/venv"
+VENV="./venv"
 
 if [ -d "$VENV" ]; then
     info "Removing existing virtual environment..."
@@ -87,7 +80,7 @@ ok "pip available: $("$VENV/bin/python" -m pip --version)"
 # ── Python dependencies ───────────────────────────────────────────────────────
 hdr "Installing Python Dependencies"
 "$VENV/bin/python" -m pip install --upgrade pip -q
-"$VENV/bin/python" -m pip install -r "$SCRIPT_DIR/requirements.txt"
+"$VENV/bin/python" -m pip install -r "./requirements.txt"
 ok "Python dependencies installed"
 
 # ── Yggdrasil ─────────────────────────────────────────────────────────────────
@@ -273,7 +266,7 @@ ok "Reticulum config written to $RNS_CONF"
 
 # ── Launcher ──────────────────────────────────────────────────────────────────
 hdr "Creating Launch Script"
-LAUNCHER="$SCRIPT_DIR/tocs_client.sh"
+LAUNCHER="./tocs_client.sh"
 cat > "$LAUNCHER" << LAUNCHEOF
 #!/bin/bash
 cd "\$(dirname "\$0")"
