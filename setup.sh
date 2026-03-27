@@ -33,6 +33,10 @@ err()  { echo -e "${RED}[ERR]${NC} $*" >&2; exit 1; }
 info() { echo -e "${CYAN}[--]${NC}  $*"; }
 hdr()  { echo -e "\n${BOLD}=== $* ===${NC}"; }
 
+TOCS_DIR="$(pwd)"
+VENV_DIR="$TOCS_DIR/venv"
+REQUIREMENTS="$TOCS_DIR/requirements.txt"
+LAUNCHER="$TOCS_DIR/tocs_client.sh"
 RNS_CONFIG_DIR="$HOME/.config/reticulum"
 
 hdr "TOCS Client Setup"
@@ -57,7 +61,7 @@ ok "System packages ready"
 
 # ── Virtual environment ───────────────────────────────────────────────────────
 hdr "Setting Up Virtual Environment"
-VENV="./venv"
+VENV="$VENV_DIR"
 
 if [ -d "$VENV" ]; then
     info "Removing existing virtual environment..."
@@ -80,7 +84,7 @@ ok "pip available: $("$VENV/bin/python" -m pip --version)"
 # ── Python dependencies ───────────────────────────────────────────────────────
 hdr "Installing Python Dependencies"
 "$VENV/bin/python" -m pip install --upgrade pip -q
-"$VENV/bin/python" -m pip install -r "./requirements.txt"
+"$VENV/bin/python" -m pip install -r "$REQUIREMENTS"
 ok "Python dependencies installed"
 
 # ── Yggdrasil ─────────────────────────────────────────────────────────────────
@@ -266,7 +270,7 @@ ok "Reticulum config written to $RNS_CONF"
 
 # ── Launcher ──────────────────────────────────────────────────────────────────
 hdr "Creating Launch Script"
-LAUNCHER="./tocs_client.sh"
+LAUNCHER="$LAUNCHER"
 cat > "$LAUNCHER" << LAUNCHEOF
 #!/bin/bash
 cd "\$(dirname "\$0")"
