@@ -1,4 +1,0 @@
-rns>=0.7.0
-lxmf>=0.4.0
-PyQt6>=6.6.0
-PyQt6-WebEngine>=6.6.0
