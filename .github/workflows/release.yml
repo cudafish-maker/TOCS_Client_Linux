@@ -1,0 +1,70 @@
+name: Release Linux Tarball
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build tarball
+        run: |
+          TAG=${GITHUB_REF_NAME:-dev}
+          mkdir -p dist
+          tar -czf "dist/tocs_client_${TAG}.tar.gz" \
+            --transform "s|^|tocs_client/|" \
+            --exclude=".git" \
+            --exclude=".github" \
+            --exclude="__pycache__" \
+            --exclude="*.pyc" \
+            --exclude="*.pyo" \
+            --exclude="venv" \
+            --exclude="dist" \
+            .
+          echo "TARBALL=dist/tocs_client_${TAG}.tar.gz" >> $GITHUB_ENV
+          echo "TAG=$TAG" >> $GITHUB_ENV
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tocs-linux-tarball
+          path: dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: TOCS Client ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: dist/*.tar.gz
+          body: |
+            ## TOCS Client ${{ github.ref_name }} — Linux
+
+            ### Installation
+            1. Download `tocs_client_*.tar.gz` below
+            2. Extract: `tar -xzf tocs_client_*.tar.gz && cd tocs_client`
+            3. Run: `bash setup.sh`
+            4. Launch: `bash tocs_client.sh`
+
+            ### Requirements
+            - Linux (amd64, arm64, or armhf)
+            - Python 3.10+
+            - Internet connection for initial setup (Yggdrasil + dependencies)
+
+            ### Offline Map Caching
+            Use the **💾** button on the map to cache tiles for your area of
+            operations before going into the field. Cached tiles persist between
+            sessions and work without any internet connection.
