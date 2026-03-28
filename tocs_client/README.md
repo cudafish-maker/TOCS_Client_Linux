@@ -48,12 +48,6 @@ PyQt6-WebEngine >= 6.6.0
 
 ## Installation
 
-Two ways to install
-1. download the tarball from the release section, and extract it. Once extracted to tocs_client
-```bash
-bash setup.sh
-```
-2. Clone the github directory
 ```bash
 git clone https://github.com/cudafish-maker/TOCS_Client_Linux.git
 cd TOCS_Client_Linux
@@ -117,7 +111,7 @@ Click any asset to view its details. Click your own operator entry to edit your 
 - Type a message and press **Enter** or click **Send** to broadcast to all online operators
 - Use `/msg <callsign> <message>` to send a private message
 - Double-click a peer in the list to start a private conversation
-- Peers are discovered automatically — no addresses to configure (sometimes desyncs occur. If you suspect this is happened, just use the announce button.  This will attempt to re-establish comm channel)
+- Peers are discovered automatically — no addresses to configure
 
 ### RNode Config
 
@@ -152,8 +146,6 @@ Built-in types:
 | **Transmitter Site** | Radio site with frequency and TX type |
 
 Custom types can be added by the server administrator and will automatically sync to all clients.
-
-Clients can add assets, but each asset must be verified as an actual asset by another operator or the server.  Unverified assets show up with a question mark on the map.
 
 ---
 
