@@ -196,10 +196,10 @@ class RNodeDialog(QDialog):
                 self._rns_config_dir,
                 port        = port,
                 frequency   = updates.get("frequency", 915000000),
-                bandwidth   = updates.get("bandwidth", 125000),
+                bandwidth   = updates.get("bandwidth", 500000),
                 txpower     = updates.get("txpower", 17),
-                spreadingfactor = updates.get("spreadingfactor", 11),
-                codingrate  = updates.get("codingrate", 8),
+                spreadingfactor = updates.get("spreadingfactor", 8),
+                codingrate  = updates.get("codingrate", 5),
             )
             if ok:
                 QMessageBox.information(

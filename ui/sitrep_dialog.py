@@ -85,7 +85,7 @@ class SitrepDialog(QDialog):
         self._asset_combo = QComboBox()
         self._asset_combo.addItem("— none —", None)
         for a in self._assets:
-            self._asset_combo.addItem(f"{a.name} ({a.asset_type.value})", a.id)
+            self._asset_combo.addItem(f"{a.name} ({(a.asset_type if isinstance(a.asset_type, str) else a.asset_type.value)})", a.id)
         loc_layout.addWidget(self._asset_combo)
 
         pos_row = QHBoxLayout()
@@ -206,7 +206,7 @@ class SitrepDialog(QDialog):
                 loc_text = f"Asset ID {s.asset_id}"
                 for a in self._assets:
                     if a.id == s.asset_id:
-                        loc_text = f"{a.name} ({a.asset_type.value})"
+                        loc_text = f"{a.name} ({(a.asset_type if isinstance(a.asset_type, str) else a.asset_type.value)})"
                         break
             elif s.lat is not None:
                 loc_text = f"{s.lat:.5f}, {s.lon:.5f}"

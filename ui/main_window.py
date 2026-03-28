@@ -107,6 +107,7 @@ class MainWindow(QMainWindow):
         self._chat_dock.visibilityChanged.connect(self._act_toggle_chat.setChecked)
 
         self._asset_panel.asset_selected.connect(self._on_asset_selected)
+        self._asset_panel.add_requested.connect(lambda _: self._open_add_asset())
         self._asset_panel.type_visibility_changed.connect(self._map.set_type_visible)
         self._sitrep_panel.add_requested.connect(self._open_add_sitrep)
         self._sitrep_panel.sitrep_selected.connect(self._on_sitrep_selected)
@@ -186,7 +187,7 @@ class MainWindow(QMainWindow):
     def _open_add_asset(self):
         from ui.asset_dialog import AssetDialog
         skills = self._asset_ctrl.get_all_skills()
-        dlg = AssetDialog(self, all_skills=skills, exclude_operator=True)
+        dlg = AssetDialog(self, all_skills=skills, initial_type="safehouse")
         dlg.pick_button.clicked.connect(lambda: self._start_place_mode(dlg, "asset"))
         dlg.accepted.connect(lambda: self._submit_new_asset(dlg.result_asset))
         dlg.show()
@@ -284,22 +285,31 @@ class MainWindow(QMainWindow):
             )
 
     def _on_sync_asset(self, asset):
+        import db.asset_repo as repo
+        repo.save(asset)
         self._asset_panel.add_or_update_asset(asset)
         self._map.add_or_update_asset(asset)
         self._update_counts()
 
     def _on_sync_sitrep(self, sitrep):
+        import db.sitrep_repo as repo
+        repo.save(sitrep)
         self._sitrep_panel.add_or_update_sitrep(sitrep)
+        self._sitrep_panel.flash_sitrep(sitrep.id, sitrep.severity)
         if sitrep.lat is not None and sitrep.lon is not None:
             self._map.add_or_update_sitrep(sitrep)
         self._update_counts()
 
     def _on_sync_sitrep_deleted(self, sitrep_id: int):
+        import db.sitrep_repo as repo
+        repo.delete(sitrep_id)
         self._sitrep_panel.remove_sitrep(sitrep_id)
         self._map.remove_sitrep(sitrep_id)
         self._update_counts()
 
     def _on_sync_asset_deleted(self, asset_id: int):
+        import db.asset_repo as repo
+        repo.delete(asset_id)
         self._asset_panel.remove_asset(asset_id)
         self._map.remove_asset(asset_id)
         self._update_counts()

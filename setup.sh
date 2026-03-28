@@ -33,7 +33,7 @@ err()  { echo -e "${RED}[ERR]${NC} $*" >&2; exit 1; }
 info() { echo -e "${CYAN}[--]${NC}  $*"; }
 hdr()  { echo -e "\n${BOLD}=== $* ===${NC}"; }
 
-TOCS_DIR="$(pwd)"
+TOCS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="$TOCS_DIR/venv"
 REQUIREMENTS="$TOCS_DIR/requirements.txt"
 LAUNCHER="$TOCS_DIR/tocs_client.sh"
@@ -68,6 +68,9 @@ if [ -d "$VENV" ]; then
     rm -rf "$VENV"
 fi
 
+# Clear stale Python bytecode cache
+find "$TOCS_DIR" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+
 python3 -m venv "$VENV"
 ok "Virtual environment created"
 
@@ -84,7 +87,7 @@ ok "pip available: $("$VENV/bin/python" -m pip --version)"
 # ── Python dependencies ───────────────────────────────────────────────────────
 hdr "Installing Python Dependencies"
 "$VENV/bin/python" -m pip install --upgrade pip -q
-"$VENV/bin/python" -m pip install -r "$REQUIREMENTS"
+"$VENV/bin/python" -m pip install "rns>=0.7.0" "lxmf>=0.4.0" "PyQt6>=6.6.0" "PyQt6-WebEngine>=6.6.0"
 ok "Python dependencies installed"
 
 # ── Yggdrasil ─────────────────────────────────────────────────────────────────
@@ -227,16 +230,16 @@ I2P_BLOCK=""
 
 RNODE_BLOCK=""
 [ "$USE_RNODE" = true ] && RNODE_BLOCK="
-  # RNode LoRa — 915 MHz defaults. Use 'RNode Config' in TOCS to sync from server.
+  # RNode LoRa — 915 MHz, fast profile (SF8/BW500/CR5). Use 'RNode Config' in TOCS to sync from server.
   [[RNode LoRa 915MHz]]
     type = RNodeInterface
     enabled = yes
     port = $RNODE_PORT
     frequency = 915000000
-    bandwidth = 125000
+    bandwidth = 500000
     txpower = 17
-    spreadingfactor = 11
-    codingrate = 8
+    spreadingfactor = 8
+    codingrate = 5
 "
 
 cat > "$RNS_CONF" << RNSEOF
@@ -273,8 +276,7 @@ hdr "Creating Launch Script"
 LAUNCHER="$LAUNCHER"
 cat > "$LAUNCHER" << LAUNCHEOF
 #!/bin/bash
-cd "\$(dirname "\$0")"
-venv/bin/python main.py --rns-config "$RNS_CONFIG_DIR" "\$@"
+"$TOCS_DIR/venv/bin/python" "$TOCS_DIR/main.py" --rns-config "$RNS_CONFIG_DIR" "\$@"
 LAUNCHEOF
 chmod +x "$LAUNCHER"
 ok "Launcher created: $LAUNCHER"

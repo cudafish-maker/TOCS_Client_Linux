@@ -19,10 +19,11 @@ from models.asset import (
 class AssetDialog(QDialog):
     def __init__(self, parent=None, asset: Asset = None, all_skills: list[str] = None,
                  initial_lat: float = None, initial_lon: float = None,
-                 initial_type: str = None):
+                 initial_type: str = None, exclude_operator: bool = False):
         super().__init__(parent)
         self._asset = asset
         self._all_skills = all_skills or []
+        self._exclude_operator = exclude_operator
         self._result_asset = None
 
         title = "Edit Asset" if asset else "Add Asset"
@@ -44,6 +45,8 @@ class AssetDialog(QDialog):
 
         self._type_combo = QComboBox()
         for t in AssetType:
+            if self._exclude_operator and t == AssetType.OPERATOR:
+                continue
             self._type_combo.addItem(t.value.capitalize(), t.value)
         # Add custom types from DB
         try:

@@ -4,12 +4,39 @@ ui/sitrep_panel.py — Right-side SITREP list panel
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QListWidget, QListWidgetItem,
-    QPushButton, QHBoxLayout,
+    QPushButton, QHBoxLayout, QStyledItemDelegate,
 )
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QColor
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer
+from PyQt6.QtGui import QColor, QPainter, QPen
 
 from models.sitrep import Sitrep, SEVERITY_COLORS
+
+
+class _SitrepDelegate(QStyledItemDelegate):
+    """Draws a severity-colored flashing outline on alerted items."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._flash_colors: dict[int, QColor] = {}
+
+    def set_flash(self, sitrep_id: int, color: QColor | None):
+        if color is None:
+            self._flash_colors.pop(sitrep_id, None)
+        else:
+            self._flash_colors[sitrep_id] = color
+
+    def paint(self, painter: QPainter, option, index):
+        super().paint(painter, option, index)
+        sitrep_id = index.data(Qt.ItemDataRole.UserRole)
+        color = self._flash_colors.get(sitrep_id)
+        if color:
+            painter.save()
+            pen = QPen(color)
+            pen.setWidth(3)
+            painter.setPen(pen)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.drawRect(option.rect.adjusted(2, 2, -2, -2))
+            painter.restore()
 
 
 class SitrepPanel(QWidget):
@@ -19,6 +46,7 @@ class SitrepPanel(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._items: dict[int, QListWidgetItem] = {}
+        self._flash_timers: dict[int, QTimer] = {}
         self._build_ui()
 
     def _build_ui(self):
@@ -34,6 +62,8 @@ class SitrepPanel(QWidget):
         self._list = QListWidget()
         self._list.setObjectName("sitrepList")
         self._list.itemClicked.connect(self._on_item_clicked)
+        self._delegate = _SitrepDelegate(self._list)
+        self._list.setItemDelegate(self._delegate)
         layout.addWidget(self._list)
 
         btn_row = QHBoxLayout()
@@ -56,6 +86,38 @@ class SitrepPanel(QWidget):
         else:
             self._add_item(sitrep)
 
+    def flash_sitrep(self, sitrep_id: int, severity):
+        """Flash a severity-colored outline until the user clicks the item."""
+        if sitrep_id not in self._items:
+            return
+
+        # Cancel any existing flash for this item
+        old = self._flash_timers.pop(sitrep_id, None)
+        if old:
+            old.stop()
+
+        on_color = QColor(SEVERITY_COLORS.get(severity, "#cdd6f4"))
+        state = [0]
+
+        def _tick():
+            self._delegate.set_flash(sitrep_id, on_color if state[0] % 2 == 0 else None)
+            self._list.viewport().update()
+            state[0] += 1
+
+        timer = QTimer(self)
+        timer.setInterval(400)
+        timer.timeout.connect(_tick)
+        self._flash_timers[sitrep_id] = timer
+        _tick()       # first flash is immediate
+        timer.start()
+
+    def _stop_flash(self, sitrep_id: int):
+        timer = self._flash_timers.pop(sitrep_id, None)
+        if timer:
+            timer.stop()
+        self._delegate.set_flash(sitrep_id, None)
+        self._list.viewport().update()
+
     def _add_item(self, sitrep: Sitrep):
         item = QListWidgetItem()
         item.setData(Qt.ItemDataRole.UserRole, sitrep.id)
@@ -77,4 +139,5 @@ class SitrepPanel(QWidget):
     def _on_item_clicked(self, item: QListWidgetItem):
         sitrep_id = item.data(Qt.ItemDataRole.UserRole)
         if sitrep_id is not None:
+            self._stop_flash(sitrep_id)
             self.sitrep_selected.emit(sitrep_id)
