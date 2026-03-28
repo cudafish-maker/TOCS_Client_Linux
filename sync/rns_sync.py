@@ -19,7 +19,7 @@ from sync.protocol import (
 
 APP_NAME         = "tocs"
 ASPECT_SYNC      = "sync"
-RECONNECT_DELAY  = 10   # seconds between reconnect attempts
+RECONNECT_DELAY  = 5    # seconds between reconnect attempts
 
 
 class _AnnounceHandler:
@@ -106,7 +106,9 @@ class SyncClient(QObject):
             self.status_changed.emit("Connecting to server...")
             identity = RNS.Identity.recall(server_hash)
             if identity is None:
+                self.status_changed.emit("Discovering path to server...")
                 RNS.Transport.request_path(server_hash)
+                threading.Timer(4.0, self._connect).start()
                 return
 
             dest = RNS.Destination(
