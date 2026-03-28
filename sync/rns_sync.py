@@ -4,6 +4,7 @@ Discovers the TOCS server via announces, authenticates, and syncs data.
 """
 
 import threading
+import time
 import RNS
 from PyQt6.QtCore import QObject, pyqtSignal
 
@@ -206,7 +207,8 @@ class SyncClient(QObject):
                 import db.session as session_cache
                 session_cache.save(callsign, op_id, password or "")
                 self.auth_ok.emit(op_id, callsign)
-                RNS.Packet(packet.link, pack(MSG_HELLO, {"callsign": callsign})).send()
+                last_sync = session_cache.get_last_sync()
+                RNS.Packet(packet.link, pack(MSG_HELLO, {"callsign": callsign, "last_sync": last_sync})).send()
 
             elif msg_type == MSG_AUTH_FAIL:
                 _, payload = unpack(message)
@@ -216,6 +218,8 @@ class SyncClient(QObject):
                 pass
 
             elif msg_type == MSG_SYNC_DONE:
+                import db.session as session_cache
+                session_cache.save_last_sync(time.time())
                 self.sync_complete.emit()
 
             elif msg_type == MSG_ASSET:

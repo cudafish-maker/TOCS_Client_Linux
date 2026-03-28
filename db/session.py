@@ -61,3 +61,19 @@ def verify_offline(callsign: str, password: str) -> Optional[int]:
 def get_last_callsign() -> Optional[str]:
     data = load()
     return data.get("callsign") if data else None
+
+
+def save_last_sync(timestamp: float):
+    """Persist the Unix timestamp of the last successful sync."""
+    data = load() or {}
+    data["last_sync"] = timestamp
+    path = _session_file()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def get_last_sync() -> float:
+    """Return Unix timestamp of last successful sync, or 0.0 (triggers full sync)."""
+    data = load()
+    return float(data.get("last_sync", 0.0)) if data else 0.0
