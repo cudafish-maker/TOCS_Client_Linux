@@ -6,6 +6,8 @@
 <title>TOCS Map</title>
 <link rel="stylesheet" href="leaflet.css"/>
 <script src="leaflet.js"></script>
+<script src="idb.min.js"></script>
+<script src="leaflet.offline.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body, #map { width: 100%; height: 100%; background: #1e1e2e; }
@@ -100,6 +102,36 @@
     font-size: 9px !important;
   }
   .leaflet-control-attribution a { color: #89b4fa !important; }
+
+  /* ── Offline cache controls ──────────────────────────────────────── */
+  .savetiles.leaflet-bar a {
+    background: #1e1e2e !important;
+    color: #cdd6f4 !important;
+    border-color: #313244 !important;
+    font-size: 15px !important;
+    line-height: 26px !important;
+    width: 26px !important;
+    height: 26px !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+  .savetiles.leaflet-bar a:hover { background: #313244 !important; }
+  .savetiles.leaflet-bar a.rmtiles { color: #f38ba8 !important; }
+
+  .cache-status-ctrl {
+    background: rgba(17,17,27,0.85);
+    color: #585b70;
+    font-family: monospace;
+    font-size: 10px;
+    padding: 3px 7px;
+    border-radius: 3px;
+    border: 1px solid #313244;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .cache-status-ctrl.has-tiles { color: #a6adc8; }
+  .cache-status-ctrl.saving    { color: #a6e3a1; }
 </style>
 </head>
 <body>
@@ -121,20 +153,21 @@ function initMap() {
     zoomControl: true,
   });
 
+  // ── Tile layers (offline-capable: serve from cache, fall back to network) ──
   var baseLayers = {
-    "Street": L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    "Street": L.tileLayer.offline('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd', maxZoom: 20,
     }),
-    "Topographic": L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    "Topographic": L.tileLayer.offline('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)',
       maxZoom: 17,
     }),
-    "Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    "Satellite": L.tileLayer.offline('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       attribution: 'Tiles © Esri — Source: Esri, USGS, NOAA',
       maxZoom: 19,
     }),
-    "Dark": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    "Dark": L.tileLayer.offline('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd', maxZoom: 20,
     }),
@@ -162,6 +195,89 @@ function initMap() {
     if (bridge) {
       bridge.mouseMove(e.latlng.lat, e.latlng.lng);
     }
+  });
+
+  // ── Offline tile cache ────────────────────────────────────────────────────
+  var _activeBaseLayer = baseLayers["Street"];
+
+  // Save tiles control — 💾 saves current view z5→z16, 🗑 clears all
+  var _saveTiles = L.control.savetiles(_activeBaseLayer, {
+    position:       'bottomleft',
+    saveText:       '💾',
+    rmText:         '🗑',
+    saveWhatYouSee: true,
+    maxZoom:        16,
+    parallel:       10,
+    alwaysDownload: false,   // skip tiles already in cache
+    confirm: function(status, go) {
+      var n = status.lengthToBeSaved;
+      if (n === 0) {
+        alert('No tiles to cache — zoom in or pan to your area of operations first.');
+        return;
+      }
+      var mb = Math.round(n * 15 / 1024);
+      if (window.confirm('Cache ' + n + ' map tiles for offline use?\n(approx. ' + mb + ' MB)')) go();
+    },
+    confirmRemoval: function(status, go) {
+      if (window.confirm('Delete all ' + status.storagesize + ' cached tiles?')) go();
+    },
+  });
+  _saveTiles.addTo(map);
+
+  // Track active base layer so savetiles control saves the right one
+  map.on('baselayerchange', function(e) {
+    _activeBaseLayer = e.layer;
+    _saveTiles.setLayer(e.layer);
+    // Reset cached size display for new layer context
+    _saveTiles.status.storagesize = null;
+    _saveTiles.setStorageSize();
+  });
+
+  // ── Cache status indicator ────────────────────────────────────────────────
+  var _StatusControl = L.Control.extend({
+    options: { position: 'bottomleft' },
+    onAdd: function() {
+      this._el = L.DomUtil.create('div', 'cache-status-ctrl');
+      this._el.textContent = '';
+      return this._el;
+    },
+    set: function(text, cls) {
+      this._el.className = 'cache-status-ctrl' + (cls ? ' ' + cls : '');
+      this._el.textContent = text;
+    }
+  });
+  var _statusCtrl = new _StatusControl();
+  _statusCtrl.addTo(map);
+
+  function refreshCacheCount() {
+    if (window.LeafletOffline) {
+      LeafletOffline.getStorageLength().then(function(n) {
+        if (n > 0) {
+          _statusCtrl.set('📦 ' + n.toLocaleString() + ' tiles cached', 'has-tiles');
+        } else {
+          _statusCtrl.set('No tiles cached');
+        }
+      }).catch(function() {
+        _statusCtrl.set('');
+      });
+    }
+  }
+  refreshCacheCount();
+
+  // Wire progress events across all offline base layers
+  Object.values(baseLayers).forEach(function(layer) {
+    layer.on('savestart', function(e) {
+      _statusCtrl.set('Caching 0\u202f/\u202f' + e.lengthToBeSaved + '\u2026', 'saving');
+    });
+    layer.on('savetileend', function(e) {
+      _statusCtrl.set('Caching ' + e.lengthSaved + '\u202f/\u202f' + e.lengthToBeSaved + '\u2026', 'saving');
+    });
+    layer.on('saveend', function() {
+      refreshCacheCount();
+    });
+    layer.on('tilesremoved', function() {
+      _statusCtrl.set('No tiles cached');
+    });
   });
 }
 

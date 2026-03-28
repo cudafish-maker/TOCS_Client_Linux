@@ -6,7 +6,7 @@ import os
 import json
 
 from PyQt6.QtWebEngineWidgets import QWebEngineView
-from PyQt6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings
+from PyQt6.QtWebEngineCore import QWebEnginePage, QWebEngineProfile, QWebEngineSettings
 from PyQt6.QtWebChannel import QWebChannel
 from PyQt6.QtCore import QUrl, pyqtSignal
 
@@ -45,13 +45,18 @@ class MapView(QWebEngineView):
         self._ready = False
         self._hidden_types: set = set()   # type keys currently hidden
 
-        # Set a real browser user agent so OSM doesn't block tile requests
-        self.page().profile().setHttpUserAgent(
+        # Named persistent profile — IndexedDB (offline tile cache) survives restarts.
+        # Stored at ~/.local/share/<app>/QtWebEngine/tocs/ on Linux,
+        # %APPDATA%\<app>\QtWebEngine\tocs\ on Windows.
+        profile = QWebEngineProfile("tocs", self)
+        profile.setHttpUserAgent(
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
             "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
+        page = QWebEnginePage(profile, self)
+        self.setPage(page)
 
-        # Allow OSM tile requests from file:// origin
+        # Allow tile requests from file:// origin
         settings = self.page().settings()
         settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True)
 
