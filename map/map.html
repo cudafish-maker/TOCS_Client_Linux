@@ -154,12 +154,16 @@ function initMap() {
   });
 
   // ── Tile layers (offline-capable: serve from cache, fall back to network) ──
+  // NOTE: subdomains ({s}) are intentionally removed from all offline layers.
+  // leaflet.offline stores/retrieves tiles by their exact URL. If subdomains
+  // rotate between save and load, the URL changes → cache miss → network fetch.
+  // Using a single fixed subdomain (a.) ensures save and load keys always match.
   var baseLayers = {
-    "Street": L.tileLayer.offline('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    "Street": L.tileLayer.offline('https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd', maxZoom: 20,
+      maxZoom: 20,
     }),
-    "Topographic": L.tileLayer.offline('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    "Topographic": L.tileLayer.offline('https://a.tile.opentopomap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)',
       maxZoom: 17,
     }),
@@ -167,14 +171,14 @@ function initMap() {
       attribution: 'Tiles © Esri — Source: Esri, USGS, NOAA',
       maxZoom: 19,
     }),
-    "Dark": L.tileLayer.offline('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    "Dark": L.tileLayer.offline('https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd', maxZoom: 20,
+      maxZoom: 20,
     }),
   };
 
   var overlays = {
-    "Labels": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+    "Labels": L.tileLayer.offline('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
       attribution: 'Tiles © Esri',
       maxZoom: 19,
       opacity: 0.9,
