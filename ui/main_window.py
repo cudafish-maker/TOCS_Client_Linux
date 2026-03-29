@@ -293,9 +293,17 @@ class MainWindow(QMainWindow):
 
     def _on_sync_sitrep(self, sitrep):
         import db.sitrep_repo as repo
+        existing = repo.get_by_id(sitrep.id) if sitrep.id is not None else None
+        is_new_or_changed = (
+            existing is None
+            or existing.title    != sitrep.title
+            or existing.body     != sitrep.body
+            or existing.severity != sitrep.severity
+        )
         repo.save(sitrep)
         self._sitrep_panel.add_or_update_sitrep(sitrep)
-        self._sitrep_panel.flash_sitrep(sitrep.id, sitrep.severity)
+        if is_new_or_changed:
+            self._sitrep_panel.flash_sitrep(sitrep.id, sitrep.severity)
         if sitrep.lat is not None and sitrep.lon is not None:
             self._map.add_or_update_sitrep(sitrep)
         self._update_counts()
