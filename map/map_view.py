@@ -48,12 +48,15 @@ class MapView(QWebEngineView):
         # Named persistent profile — IndexedDB (offline tile cache) survives restarts.
         # Stored at ~/.local/share/<app>/QtWebEngine/tocs/ on Linux,
         # %APPDATA%\<app>\QtWebEngine\tocs\ on Windows.
+        # Profile is a child of the view. Page is a child of the profile so
+        # Qt always destroys the page before the profile, avoiding the
+        # "web profile requested but webenginepage still not deleted" warning.
         profile = QWebEngineProfile("tocs", self)
         profile.setHttpUserAgent(
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
             "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
-        page = QWebEnginePage(profile, self)
+        page = QWebEnginePage(profile, profile)
         self.setPage(page)
 
         # Allow tile requests from file:// origin
