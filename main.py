@@ -75,6 +75,8 @@ def main():
         rns_config_dir = args.rns_config,
     )
     win.show()
+    # Signals are now connected — safe to ask the server for data.
+    sync.begin_sync()
     sys.exit(app.exec())
 
 

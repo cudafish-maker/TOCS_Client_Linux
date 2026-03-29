@@ -206,9 +206,10 @@ class SyncClient(QObject):
                     password            = self._password
                 import db.session as session_cache
                 session_cache.save(callsign, op_id, password or "")
+                # Do NOT send HELLO here — the main window hasn't connected its
+                # signals yet, so any data the server sends would be lost.
+                # client_main.py calls begin_sync() after MainWindow is fully constructed.
                 self.auth_ok.emit(op_id, callsign)
-                last_sync = session_cache.get_last_sync()
-                RNS.Packet(packet.link, pack(MSG_HELLO, {"callsign": callsign, "last_sync": last_sync})).send()
 
             elif msg_type == MSG_AUTH_FAIL:
                 _, payload = unpack(message)
@@ -268,6 +269,24 @@ class SyncClient(QObject):
                 RNS.Packet(link, data).send()
             except Exception as e:
                 RNS.log(f"[tocs] Send error: {e}", RNS.LOG_WARNING)
+
+    def begin_sync(self):
+        """
+        Send HELLO to the server to trigger a full/delta sync.
+        Must be called AFTER MainWindow has connected its signals — otherwise
+        the server's response arrives before any slots are registered.
+        """
+        with self._lock:
+            link     = self._link
+            auth     = self._authenticated
+            callsign = self._callsign
+        if link and auth and callsign and link.status == RNS.Link.ACTIVE:
+            import db.session as session_cache
+            last_sync = session_cache.get_last_sync()
+            try:
+                RNS.Packet(link, pack(MSG_HELLO, {"callsign": callsign, "last_sync": last_sync})).send()
+            except Exception as e:
+                RNS.log(f"[tocs] begin_sync error: {e}", RNS.LOG_ERROR)
 
     def send_asset(self, asset):
         self._send(pack(MSG_ASSET_UPDATE, asset_to_dict(asset)))
