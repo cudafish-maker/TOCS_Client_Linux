@@ -87,7 +87,7 @@ ok "pip available: $("$VENV/bin/python" -m pip --version)"
 # ── Python dependencies ───────────────────────────────────────────────────────
 hdr "Installing Python Dependencies"
 "$VENV/bin/python" -m pip install --upgrade pip -q
-"$VENV/bin/python" -m pip install "rns>=0.7.0" "lxmf>=0.4.0" "PyQt6>=6.6.0" "PyQt6-WebEngine>=6.6.0"
+"$VENV/bin/python" -m pip install -r "$REQUIREMENTS"
 ok "Python dependencies installed"
 
 # ── Yggdrasil ─────────────────────────────────────────────────────────────────
